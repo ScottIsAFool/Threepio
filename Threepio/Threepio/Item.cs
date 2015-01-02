@@ -62,9 +62,7 @@ namespace Threepio
                 response.EnsureSuccessStatusCode();
                 data = await response.Content.ReadAsStringAsync();
             }
-            StringReader stringreader = new StringReader(data);
-            JsonReader jsonReader = new JsonTextReader(stringreader);
-            List<T> items = JsonSerializer.Create().Deserialize<BulkGet<T>>(jsonReader).items;
+            List<T> items = JsonConvert.DeserializeObject<BulkGet<T>>(data).items;
 
             foreach (T item in items)
             {
@@ -80,9 +78,8 @@ namespace Threepio
             {
                 data = await client.GetStringAsync(string.Format("{0}/{1}/{2}/", Settings.RootUrl, endpoint, id));
             }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            T item = JsonSerializer.Create().Deserialize<T>(reader);
+            
+            T item = JsonConvert.DeserializeObject<T>(data);
             
             item.ExtractIds();
 
