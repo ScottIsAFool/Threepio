@@ -1,10 +1,7 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 
 namespace Threepio
 {
@@ -34,21 +31,10 @@ namespace Threepio
 
         public static async Task<Vehicle> Get(int id)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/vehicles/{1}/", Settings.RootUrl, id));
-            }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            Vehicle vehicle = JsonSerializer.Create().Deserialize<Vehicle>(reader);
-
-            vehicle.extractIds();
-
-            return vehicle;
+            return await GetInternal<Vehicle>(id, "vehicles");
         }
 
-        private void extractIds()
+        public override void ExtractIds()
         {
             foreach (Uri filmUri in FilmUris)
             {
@@ -62,20 +48,7 @@ namespace Threepio
 
         public static async Task<List<Vehicle>> GetPage(int pageNumber = 1)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/vehicles/?page={1}", Settings.RootUrl, pageNumber));
-            }
-            StringReader stringreader = new StringReader(data);
-            JsonReader jsonReader = new JsonTextReader(stringreader);
-            List<Vehicle> vehicles = JsonSerializer.Create().Deserialize<BulkGet<Vehicle>>(jsonReader).items;
-
-            foreach (Vehicle vehicle in vehicles)
-            {
-                vehicle.extractIds();
-            }
-            return vehicles;
+            return await GetPageInternal<Vehicle>("vehicles", pageNumber);
         }
     }
 }

@@ -1,10 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
 namespace Threepio
 {
-    public abstract class Item
+    public abstract class Item 
     {
         public DateTime Created { get; set; }
         public DateTime Edited { get; set; }
@@ -46,6 +49,44 @@ namespace Threepio
             int.TryParse(link, out result);
 
             return result;
+        }
+
+        public virtual void ExtractIds() { }
+
+        internal static async Task<List<T>> GetPageInternal<T>(string endpoint, int pageNumber = 1) where T : Item
+        {
+            string data;
+            using (HttpClient client = WebClientFactory.GetClient())
+            {
+                var response = await client.GetAsync(string.Format("{0}/{1}/?page={2}", Settings.RootUrl, endpoint, pageNumber));
+                response.EnsureSuccessStatusCode();
+                data = await response.Content.ReadAsStringAsync();
+            }
+            StringReader stringreader = new StringReader(data);
+            JsonReader jsonReader = new JsonTextReader(stringreader);
+            List<T> items = JsonSerializer.Create().Deserialize<BulkGet<T>>(jsonReader).items;
+
+            foreach (T item in items)
+            {
+                item.ExtractIds();
+            }
+            return items;
+        }
+
+        internal static async Task<T> GetInternal<T>(int id, string endpoint) where T : Item
+        {
+            string data;
+            using (HttpClient client = WebClientFactory.GetClient())
+            {
+                data = await client.GetStringAsync(string.Format("{0}/{1}/{2}/", Settings.RootUrl, endpoint, id));
+            }
+            TextReader textreader = new StringReader(data);
+            JsonReader reader = new JsonTextReader(textreader);
+            T item = JsonSerializer.Create().Deserialize<T>(reader);
+            
+            item.ExtractIds();
+
+            return item;
         }
     }
 }

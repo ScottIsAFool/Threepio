@@ -1,10 +1,7 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 
 namespace Threepio
 {
@@ -43,20 +40,10 @@ namespace Threepio
 
         public static async Task<Character> Get(int id)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/people/{1}/", Settings.RootUrl, id));
-            }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            Character character = JsonSerializer.Create().Deserialize<Character>(reader);
-
-            character.extractIds();
-            return character;
+            return await GetInternal<Character>(id, "people");
         }
 
-        private void extractIds()
+        public override void ExtractIds()
         {
             foreach (Uri filmUri in FilmUris)
             {
@@ -80,27 +67,7 @@ namespace Threepio
 
         public static async Task<List<Character>> GetPage(int pageNumber = 1)
         {
-            string data;
-            StringReader stringreader;
-            JsonReader jsonReader;
-            BulkGet<Character> characters;
-
-            Uri nextPageUri = new Uri(string.Format("{0}/people/?page={1}", Settings.RootUrl, pageNumber));
-
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(nextPageUri);
-
-                stringreader = new StringReader(data);
-                jsonReader = new JsonTextReader(stringreader);
-                characters = JsonSerializer.Create().Deserialize<BulkGet<Character>>(jsonReader);
-            }
-
-            foreach (Character character in characters.items)
-            {
-                character.extractIds();
-            }
-            return characters.items;
+            return await GetPageInternal<Character>("people", pageNumber);
         }
     }
 }

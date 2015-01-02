@@ -1,10 +1,7 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 
 namespace Threepio
 {
@@ -32,20 +29,10 @@ namespace Threepio
 
         public static async Task<Planet> Get(int id)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/planets/{1}/", Settings.RootUrl, id));
-            }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            Planet planet = JsonSerializer.Create().Deserialize<Planet>(reader);
-
-            planet.extractIds();
-            return planet;
+            return await GetInternal<Planet>(id, "planets");
         }
 
-        private void extractIds()
+        public override void ExtractIds()
         {
             foreach (Uri filmUri in FilmUris)
             {
@@ -59,20 +46,7 @@ namespace Threepio
 
         public static async Task<List<Planet>> GetPage(int pageNumber = 1)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/planets/?page={1}", Settings.RootUrl, pageNumber));
-            }
-            StringReader stringreader = new StringReader(data);
-            JsonReader jsonReader = new JsonTextReader(stringreader);
-            List<Planet> planets = JsonSerializer.Create().Deserialize<BulkGet<Planet>>(jsonReader).items;
-
-            foreach (Planet planet in planets)
-            {
-                planet.extractIds();
-            }
-            return planets;
+            return await GetPageInternal<Planet>("planets", pageNumber);
         }
     }
 }

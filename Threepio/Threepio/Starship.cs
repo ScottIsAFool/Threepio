@@ -1,9 +1,7 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Threepio
 {
@@ -35,21 +33,10 @@ namespace Threepio
         }
         public static async Task<Starship> Get(int id)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/starships/{1}/", Settings.RootUrl, id));
-            }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            Starship ship = JsonSerializer.Create().Deserialize<Starship>(reader);
-
-            ship.extractIds();
-
-            return ship;
+            return await GetInternal<Starship>(id, "starships");
         }
 
-        private void extractIds()
+        public override void ExtractIds()
         {
             foreach (Uri filmUri in FilmUris)
             {
@@ -63,20 +50,7 @@ namespace Threepio
 
         public static async Task<List<Starship>> GetPage(int pageNumber = 1)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/starships/?page={1}", Settings.RootUrl, pageNumber));
-            }
-            StringReader stringreader = new StringReader(data);
-            JsonReader jsonReader = new JsonTextReader(stringreader);
-            List<Starship> starships = JsonSerializer.Create().Deserialize<BulkGet<Starship>>(jsonReader).items;
-
-            foreach (Starship starship in starships)
-            {
-                starship.extractIds();
-            }
-            return starships;
+            return await GetPageInternal<Starship>("starships", pageNumber);
         }
     }
 }

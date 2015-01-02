@@ -1,9 +1,7 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Threepio
 {
@@ -36,21 +34,10 @@ namespace Threepio
 
         public static async Task<Film> Get(int id)
         {
-            string data;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(string.Format("{0}/films/{1}/", Settings.RootUrl, id));
-            }
-            TextReader textreader = new StringReader(data);
-            JsonReader reader = new JsonTextReader(textreader);
-            Film film = JsonSerializer.Create().Deserialize<Film>(reader);
-
-            film.ExtractIds();
-
-            return film;
+            return await GetInternal<Film>(id, "films");
         }
 
-        private void ExtractIds()
+        public override void ExtractIds()
         {
             foreach (Uri characterUri in CharacterUris)
             {
@@ -76,26 +63,7 @@ namespace Threepio
 
         public static async Task<List<Film>> GetPage(int pageNumber = 1)
         {
-            Uri nextPageUri = new Uri(string.Format("{0}/films/?page={1}", Settings.RootUrl, pageNumber));
-
-            BulkGet<Film> films = new BulkGet<Film>();
-            string data;
-            StringReader stringreader;
-            JsonReader jsonReader;
-            using (HttpClient client = WebClientFactory.GetClient())
-            {
-                data = await client.GetStringAsync(nextPageUri);
-
-                stringreader = new StringReader(data);
-                jsonReader = new JsonTextReader(stringreader);
-                films = JsonSerializer.Create().Deserialize<BulkGet<Film>>(jsonReader);
-            }
-            foreach (Film film in films.items)
-            {
-                film.ExtractIds();
-            }
-
-            return films.items;
+            return await GetPageInternal<Film>("films", pageNumber);
         }
 
         // Convenience methods to find the individual films
